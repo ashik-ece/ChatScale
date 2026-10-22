@@ -15,3 +15,19 @@ type Message struct {
 	Content   string `json:"content"`
 	Timestamp int64  `json:"timestamp"`
 }
+
+const (
+	ReasonRateLimited = "rate_limited"
+	ReasonTimedOut    = "timed_out"
+	ReasonBadCommand  = "bad_command"
+)
+
+// ErrorEnvelope is sent back to a single client when its message is rejected.
+type ErrorEnvelope struct {
+	Type   string `json:"type"`
+	Reason string `json:"reason"`
+}
+
+func NewError(reason string) ErrorEnvelope {
+	return ErrorEnvelope{Type: TypeError, Reason: reason}
+}

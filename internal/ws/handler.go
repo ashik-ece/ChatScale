@@ -47,7 +47,9 @@ func originChecker(allowed []string) func(*http.Request) bool {
 }
 
 // ServeWS upgrades GET /ws/{roomID} and starts the connection's pumps.
-// The optional ?user= query parameter sets the user ID.
+// The optional ?user= query parameter sets the user ID and ?mod=true marks the
+// connection as a moderator. There is no authentication yet, so both are
+// trusted as sent; this is for local development only.
 func ServeWS(h Hub, up websocket.Upgrader) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		roomID := r.PathValue("roomID")
@@ -61,6 +63,7 @@ func ServeWS(h Hub, up websocket.Upgrader) http.HandlerFunc {
 			return
 		}
 		c := NewClient(conn, r.URL.Query().Get("user"), roomID)
+		c.IsMod = r.URL.Query().Get("mod") == "true"
 		h.Register(c)
 		go WritePump(c)
 		go ReadPump(c, h)

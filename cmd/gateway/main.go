@@ -11,7 +11,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ashik-ece/chatscale/internal/filter"
 	"github.com/ashik-ece/chatscale/internal/hub"
+	"github.com/ashik-ece/chatscale/internal/ratelimit"
 	"github.com/ashik-ece/chatscale/internal/ws"
 )
 
@@ -19,7 +21,13 @@ func main() {
 	addr := ":" + getenv("PORT", "8080")
 	origins := strings.Split(getenv("ALLOWED_ORIGINS", ""), ",")
 
-	h := hub.New()
+	trie, err := filter.LoadBannedWords(getenv("BANNED_WORDS_PATH", "configs/banned_words.txt"))
+	if err != nil {
+		log.Fatalf("load banned words: %v", err)
+	}
+	limiter := ratelimit.NewStore(ratelimit.ConfigFromEnv())
+
+	h := hub.New(limiter, trie)
 	upgrader := ws.NewUpgrader(origins)
 
 	mux := http.NewServeMux()

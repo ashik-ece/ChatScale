@@ -1,0 +1,23 @@
+# One banned word per line; matching is case-insensitive.
+badword
+BadWord2
+spam
+scam
+spoiler
+noob
+trash
+idiot
+stupid
+loser
+dumb
+hate
+toxic
+cheater
+hacker
+Griefer
+troll
+fake
+fraud
+clown
+bozo
+lame

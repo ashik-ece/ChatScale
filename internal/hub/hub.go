@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"log"
 	"sync"
+	"time"
 
+	"github.com/ashik-ece/chatscale/internal/filter"
 	"github.com/ashik-ece/chatscale/internal/message"
+	"github.com/ashik-ece/chatscale/internal/ratelimit"
 	"github.com/ashik-ece/chatscale/internal/ws"
 )
 
@@ -17,11 +20,23 @@ import (
 type Hub struct {
 	mu    sync.Mutex
 	rooms map[string]*Room
+
+	limiter *ratelimit.Store
+	trie    *filter.Trie
+	banned  sync.Map // userID -> struct{}
 }
 
-func New() *Hub {
-	return &Hub{rooms: make(map[string]*Room)}
+func New(limiter *ratelimit.Store, trie *filter.Trie) *Hub {
+	return &Hub{rooms: make(map[string]*Room), limiter: limiter, trie: trie}
 }
+
+func (h *Hub) Allow(userID string) bool       { return h.limiter.Check(userID) }
+func (h *Hub) IsTimedOut(userID string) bool  { return h.limiter.IsTimedOut(userID) }
+func (h *Hub) BanUser(userID string)          { h.banned.Store(userID, struct{}{}) }
+func (h *Hub) IsBanned(userID string) bool    { _, ok := h.banned.Load(userID); return ok }
+func (h *Hub) Filter(s string) (string, bool) { return h.trie.Filter(s) }
+
+func (h *Hub) TimeoutUser(userID string, d time.Duration) { h.limiter.Timeout(userID, d) }
 
 func (h *Hub) Register(c *ws.Client) {
 	h.mu.Lock()
