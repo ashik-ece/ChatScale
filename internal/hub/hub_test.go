@@ -9,10 +9,14 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
+	dto "github.com/prometheus/client_model/go"
 
 	"github.com/ashik-ece/chatscale/internal/filter"
 	"github.com/ashik-ece/chatscale/internal/hub"
 	"github.com/ashik-ece/chatscale/internal/message"
+	"github.com/ashik-ece/chatscale/internal/metrics"
 	"github.com/ashik-ece/chatscale/internal/pubsub"
 	"github.com/ashik-ece/chatscale/internal/ratelimit"
 	"github.com/ashik-ece/chatscale/internal/ws"
@@ -27,14 +31,21 @@ func newServer(t *testing.T) (*httptest.Server, *hub.Hub) {
 // like gateways sharing a Redis.
 func newNode(t *testing.T, bus *pubsub.MemoryBus, nodeID string) (*httptest.Server, *hub.Hub) {
 	t.Helper()
+	srv, h, _ := newNodeWithMetrics(t, bus, nodeID)
+	return srv, h
+}
+
+func newNodeWithMetrics(t *testing.T, bus *pubsub.MemoryBus, nodeID string) (*httptest.Server, *hub.Hub, *metrics.Metrics) {
+	t.Helper()
+	m := metrics.New(nodeID, prometheus.NewRegistry())
 	trie := filter.NewTrie()
 	trie.Insert("badword")
-	h := hub.New(ratelimit.NewStore(ratelimit.Config{Capacity: 5, RefillRate: 2}), trie, bus, bus.NewSubscriber(), nodeID)
+	h := hub.New(ratelimit.NewStore(ratelimit.Config{Capacity: 5, RefillRate: 2}), trie, bus, bus.NewSubscriber(), nodeID, m)
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /ws/{roomID}", ws.ServeWS(h, ws.NewUpgrader(nil)))
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
-	return srv, h
+	return srv, h, m
 }
 
 func dial(t *testing.T, srv *httptest.Server, room, user string) *websocket.Conn {
@@ -379,5 +390,120 @@ func TestClientMsgIDIsEchoedOnChatAndError(t *testing.T) {
 	}
 	if types["id-f"] != "error" {
 		t.Errorf("id-f: got %v, want rate-limit error", types["id-f"])
+	}
+}
+
+func eventually(t *testing.T, what string, cond func() bool) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for !cond() {
+		if time.Now().After(deadline) {
+			t.Fatalf("timed out waiting for %s", what)
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+func TestConnectionAndRoomGauges(t *testing.T) {
+	srv, _, m := newNodeWithMetrics(t, pubsub.NewMemoryBus(), "n")
+
+	a := dial(t, srv, "room1", "alice")
+	b := dial(t, srv, "room1", "bob")
+	c := dial(t, srv, "room2", "carol")
+	eventually(t, "3 connections / 2 rooms", func() bool {
+		return testutil.ToFloat64(m.ActiveConnections) == 3 && testutil.ToFloat64(m.ActiveRooms) == 2
+	})
+
+	a.Close()
+	b.Close()
+	eventually(t, "1 connection / 1 room", func() bool {
+		return testutil.ToFloat64(m.ActiveConnections) == 1 && testutil.ToFloat64(m.ActiveRooms) == 1
+	})
+	c.Close()
+	eventually(t, "0 connections / 0 rooms", func() bool {
+		return testutil.ToFloat64(m.ActiveConnections) == 0 && testutil.ToFloat64(m.ActiveRooms) == 0
+	})
+}
+
+func TestMessageAndRateLimitCounters(t *testing.T) {
+	srv, _, m := newNodeWithMetrics(t, pubsub.NewMemoryBus(), "n")
+	a := dial(t, srv, "room1", "alice")
+	time.Sleep(50 * time.Millisecond)
+
+	for i := 0; i < 8; i++ { // capacity is 5
+		say(t, a, "x")
+	}
+	eventually(t, "5 published and 3 rejected", func() bool {
+		return testutil.ToFloat64(m.MessagesTotal.WithLabelValues("room1")) == 5 &&
+			testutil.ToFloat64(m.RateLimitRejections) == 3
+	})
+	if got := testutil.ToFloat64(m.MessagesDropped); got != 0 {
+		t.Errorf("dropped = %v, want 0", got)
+	}
+}
+
+func TestFanoutLatencyIsObserved(t *testing.T) {
+	srv, _, m := newNodeWithMetrics(t, pubsub.NewMemoryBus(), "n")
+	a := dial(t, srv, "room1", "alice")
+	time.Sleep(50 * time.Millisecond)
+
+	say(t, a, "hi")
+	eventually(t, "a fan-out observation", func() bool {
+		return testutil.CollectAndCount(m.FanoutLatency) > 0 && histogramCount(t, m) == 1
+	})
+}
+
+func histogramCount(t *testing.T, m *metrics.Metrics) uint64 {
+	t.Helper()
+	var pb dto.Metric
+	if err := m.FanoutLatency.Write(&pb); err != nil {
+		t.Fatal(err)
+	}
+	return pb.GetHistogram().GetSampleCount()
+}
+
+func TestSlowConsumerIncrementsDropCounter(t *testing.T) {
+	bus := pubsub.NewMemoryBus()
+	m := metrics.New("n", prometheus.NewRegistry())
+	trie := filter.NewTrie()
+	h := hub.New(ratelimit.NewStore(ratelimit.Config{Capacity: 5, RefillRate: 2}), trie, bus, bus.NewSubscriber(), "n", m)
+
+	// A client with no WritePump never drains its send channel: a slow consumer.
+	slow := ws.NewClient(nil, "slow", "room1")
+	if err := h.Register(slow); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { h.Unregister(slow) })
+
+	for i := 0; i < 1000; i++ {
+		h.Broadcast(message.Message{RoomID: "room1", Content: "x"})
+		time.Sleep(100 * time.Microsecond)
+	}
+	eventually(t, "drops to be counted", func() bool {
+		return testutil.ToFloat64(m.MessagesDropped) > 0
+	})
+}
+
+func TestClosingClientIsNotCountedAsDrop(t *testing.T) {
+	bus := pubsub.NewMemoryBus()
+	m := metrics.New("n", prometheus.NewRegistry())
+	h := hub.New(ratelimit.NewStore(ratelimit.Config{Capacity: 5, RefillRate: 2}), filter.NewTrie(), bus, bus.NewSubscriber(), "n", m)
+
+	c := ws.NewClient(nil, "leaving", "room1")
+	if err := h.Register(c); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { h.Unregister(c) })
+	c.Close() // closing, but still registered, as during a disconnect
+
+	for i := 0; i < 50; i++ {
+		h.Broadcast(message.Message{RoomID: "room1", Content: "x"})
+	}
+	eventually(t, "messages to be published", func() bool {
+		return testutil.ToFloat64(m.MessagesTotal.WithLabelValues("room1")) == 50
+	})
+	time.Sleep(100 * time.Millisecond)
+	if got := testutil.ToFloat64(m.MessagesDropped); got != 0 {
+		t.Errorf("dropped = %v, want 0 for a closing client", got)
 	}
 }

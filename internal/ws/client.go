@@ -48,19 +48,27 @@ func NewClient(conn *websocket.Conn, userID, roomID string) *Client {
 	}
 }
 
-// TrySend queues data for the WritePump without blocking. It returns false when
-// the client's buffer is full (a slow consumer) or the client is shutting down.
-func (c *Client) TrySend(data []byte) bool {
+// SendResult is the outcome of a non-blocking send to a client.
+type SendResult int
+
+const (
+	Sent   SendResult = iota
+	Full              // buffer full: the client is a slow consumer
+	Closed            // client is shutting down; not a delivery failure
+)
+
+// TrySend queues data for the WritePump without blocking.
+func (c *Client) TrySend(data []byte) SendResult {
 	select {
 	case <-c.ctx.Done():
-		return false
+		return Closed
 	default:
 	}
 	select {
 	case c.send <- data:
-		return true
+		return Sent
 	default:
-		return false
+		return Full
 	}
 }
 

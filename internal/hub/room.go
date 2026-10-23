@@ -5,6 +5,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/ashik-ece/chatscale/internal/metrics"
 	"github.com/ashik-ece/chatscale/internal/ws"
 )
 
@@ -14,10 +15,11 @@ type Room struct {
 	clients map[*ws.Client]struct{}
 	dropped atomic.Uint64
 	cancel  context.CancelFunc // stops the room's fan-out goroutine
+	metrics *metrics.Metrics
 }
 
-func newRoom() *Room {
-	return &Room{clients: make(map[*ws.Client]struct{})}
+func newRoom(m *metrics.Metrics) *Room {
+	return &Room{clients: make(map[*ws.Client]struct{}), metrics: m}
 }
 
 func (r *Room) Add(c *ws.Client) {
@@ -26,10 +28,13 @@ func (r *Room) Add(c *ws.Client) {
 	r.mu.Unlock()
 }
 
-func (r *Room) Remove(c *ws.Client) {
+// Remove deletes c and reports whether it was a member.
+func (r *Room) Remove(c *ws.Client) bool {
 	r.mu.Lock()
+	defer r.mu.Unlock()
+	_, ok := r.clients[c]
 	delete(r.clients, c)
-	r.mu.Unlock()
+	return ok
 }
 
 func (r *Room) Len() int {
@@ -44,8 +49,10 @@ func (r *Room) Broadcast(data []byte) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	for c := range r.clients {
-		if !c.TrySend(data) {
+		// Only a full buffer is a slow consumer; clients already closing are skipped.
+		if c.TrySend(data) == ws.Full {
 			r.dropped.Add(1)
+			r.metrics.MessagesDropped.Inc()
 		}
 	}
 }
