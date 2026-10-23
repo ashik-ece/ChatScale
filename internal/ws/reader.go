@@ -72,11 +72,11 @@ func ReadPump(c *Client, h Hub) {
 		}
 
 		if h.IsTimedOut(c.UserID) {
-			c.SendJSON(message.NewError(message.ReasonTimedOut))
+			c.SendJSON(message.NewError(message.ReasonTimedOut, msg.ClientMsgID))
 			continue
 		}
 		if !h.Allow(c.UserID) {
-			c.SendJSON(message.NewError(message.ReasonRateLimited))
+			c.SendJSON(message.NewError(message.ReasonRateLimited, msg.ClientMsgID))
 			continue
 		}
 

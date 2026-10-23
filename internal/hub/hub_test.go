@@ -347,3 +347,37 @@ func TestSurvivingNodesKeepWorkingWhenOneStops(t *testing.T) {
 		}
 	}
 }
+
+func TestClientMsgIDIsEchoedOnChatAndError(t *testing.T) {
+	srv, _ := newServer(t)
+	a := dial(t, srv, "room1", "alice")
+	time.Sleep(50 * time.Millisecond)
+
+	ids := []string{"id-a", "id-b", "id-c", "id-d", "id-e", "id-f"}
+	for _, id := range ids {
+		payload, _ := json.Marshal(message.Message{Content: "x", ClientMsgID: id})
+		if err := a.WriteMessage(websocket.TextMessage, payload); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Chat echoes travel through pub/sub while errors are queued directly, so
+	// their relative order is not guaranteed; clients match on clientMsgId.
+	types := map[string]any{}
+	for range ids {
+		m := readRaw(t, a, time.Second)
+		if m == nil {
+			t.Fatal("missing frame")
+		}
+		id, _ := m["clientMsgId"].(string)
+		types[id] = m["type"]
+	}
+	for _, id := range ids[:5] {
+		if types[id] != "chat" {
+			t.Errorf("%s: got %v, want chat echo", id, types[id])
+		}
+	}
+	if types["id-f"] != "error" {
+		t.Errorf("id-f: got %v, want rate-limit error", types["id-f"])
+	}
+}
