@@ -12,10 +12,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redis/go-redis/v9"
 
 	"github.com/ashik-ece/chatscale/internal/filter"
 	"github.com/ashik-ece/chatscale/internal/hub"
+	"github.com/ashik-ece/chatscale/internal/metrics"
 	"github.com/ashik-ece/chatscale/internal/pubsub"
 	"github.com/ashik-ece/chatscale/internal/ratelimit"
 	"github.com/ashik-ece/chatscale/internal/ws"
@@ -39,7 +42,7 @@ func main() {
 	}
 	cancelPing()
 
-	h := hub.New(limiter, trie, pubsub.NewPublisher(rdb), pubsub.NewSubscriber(rdb), nodeID)
+	h := hub.New(limiter, trie, pubsub.NewPublisher(rdb), pubsub.NewSubscriber(rdb), nodeID, metrics.New(nodeID, prometheus.DefaultRegisterer))
 	upgrader := ws.NewUpgrader(origins)
 
 	mux := http.NewServeMux()
@@ -48,6 +51,7 @@ func main() {
 	mux.HandleFunc("/debug/pprof/", pprof.Index)
 	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
 	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	mux.Handle("GET /metrics", promhttp.Handler())
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"status":"ok"}`))

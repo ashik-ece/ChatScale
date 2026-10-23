@@ -1,0 +1,11 @@
+groups:
+  - name: chatscale
+    rules:
+      - alert: HighDropRate
+        expr: rate(chatscale_messages_dropped_total[1m]) > 1.5
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Node {{ $labels.node }} is dropping messages to slow consumers"
+          description: "{{ $labels.node }} is dropping {{ $value | printf \"%.1f\" }} messages/sec."

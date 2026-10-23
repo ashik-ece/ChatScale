@@ -4,6 +4,9 @@ x-gateway: &gateway
   environment: &gateway-env
     PORT: "8080"
     REDIS_ADDR: redis:6379
+    # Raise these for load tests (Phase 6); the defaults suit normal chat.
+    RATE_LIMIT_CAPACITY: ${RATE_LIMIT_CAPACITY:-5}
+    RATE_LIMIT_REFILL_RATE: ${RATE_LIMIT_REFILL_RATE:-2}
   depends_on:
     redis:
       condition: service_healthy
@@ -62,3 +65,27 @@ services:
       - gateway-1
       - gateway-2
       - gateway-3
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./configs/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./configs/alerts.yml:/etc/prometheus/alerts.yml:ro
+    depends_on:
+      - gateway-1
+      - gateway-2
+      - gateway-3
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus

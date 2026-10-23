@@ -10,6 +10,7 @@ import (
 
 	"github.com/ashik-ece/chatscale/internal/filter"
 	"github.com/ashik-ece/chatscale/internal/message"
+	"github.com/ashik-ece/chatscale/internal/metrics"
 	"github.com/ashik-ece/chatscale/internal/ratelimit"
 	"github.com/ashik-ece/chatscale/internal/ws"
 )
@@ -52,9 +53,10 @@ type Hub struct {
 	limiter *ratelimit.Store
 	trie    *filter.Trie
 	banned  sync.Map // userID -> struct{}
+	metrics *metrics.Metrics
 }
 
-func New(limiter *ratelimit.Store, trie *filter.Trie, pub Publisher, sub Subscriber, nodeID string) *Hub {
+func New(limiter *ratelimit.Store, trie *filter.Trie, pub Publisher, sub Subscriber, nodeID string, m *metrics.Metrics) *Hub {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Hub{
 		nodeID:  nodeID,
@@ -65,10 +67,20 @@ func New(limiter *ratelimit.Store, trie *filter.Trie, pub Publisher, sub Subscri
 		rooms:   make(map[string]*Room),
 		limiter: limiter,
 		trie:    trie,
+		metrics: m,
 	}
 }
 
-func (h *Hub) Allow(userID string) bool       { return h.limiter.Check(userID) }
+// Allow reports whether userID may send now. The caller checks IsTimedOut
+// first, so a false result here means the token bucket was empty.
+func (h *Hub) Allow(userID string) bool {
+	if h.limiter.Check(userID) {
+		return true
+	}
+	h.metrics.RateLimitRejections.Inc()
+	return false
+}
+
 func (h *Hub) IsTimedOut(userID string) bool  { return h.limiter.IsTimedOut(userID) }
 func (h *Hub) BanUser(userID string)          { h.banned.Store(userID, struct{}{}) }
 func (h *Hub) IsBanned(userID string) bool    { _, ok := h.banned.Load(userID); return ok }
@@ -91,13 +103,15 @@ func (h *Hub) Register(c *ws.Client) error {
 		if err != nil {
 			return fmt.Errorf("subscribe room %s: %w", c.RoomID, err)
 		}
-		room = newRoom()
+		room = newRoom(h.metrics)
 		var fanCtx context.Context
 		fanCtx, room.cancel = context.WithCancel(h.ctx)
 		StartFanOut(fanCtx, ch, room)
 		h.rooms[c.RoomID] = room
+		h.metrics.ActiveRooms.Inc()
 	}
 	room.Add(c)
+	h.metrics.ActiveConnections.Inc()
 	return nil
 }
 
@@ -111,9 +125,12 @@ func (h *Hub) Unregister(c *ws.Client) {
 	if !ok {
 		return
 	}
-	room.Remove(c)
+	if room.Remove(c) {
+		h.metrics.ActiveConnections.Dec()
+	}
 	if room.Len() == 0 {
 		delete(h.rooms, c.RoomID)
+		h.metrics.ActiveRooms.Dec()
 		room.cancel()
 		h.sub.Unsubscribe(c.RoomID)
 	}
@@ -133,7 +150,9 @@ func (h *Hub) Broadcast(msg message.Message) {
 	defer cancel()
 	if err := h.pub.Publish(ctx, msg.RoomID, msg); err != nil {
 		log.Printf("publish room=%s: %v", msg.RoomID, err)
+		return
 	}
+	h.metrics.MessagesTotal.WithLabelValues(msg.RoomID).Inc()
 }
 
 // Shutdown closes every client (each WritePump sends a 1001 frame), then waits

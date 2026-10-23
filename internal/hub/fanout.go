@@ -1,6 +1,9 @@
 package hub
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // StartFanOut forwards every message arriving from the room's pub/sub channel
 // to the room's local clients. This is the only path by which a message reaches
@@ -16,7 +19,9 @@ func StartFanOut(ctx context.Context, in <-chan []byte, room *Room) {
 				if !ok {
 					return
 				}
+				start := time.Now()
 				room.Broadcast(data)
+				room.metrics.FanoutLatency.Observe(time.Since(start).Seconds())
 			}
 		}
 	}()
