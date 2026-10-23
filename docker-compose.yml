@@ -1,0 +1,103 @@
+x-gateway: &gateway
+  build: .
+  image: chatscale-gateway
+  environment: &gateway-env
+    PORT: "8080"
+    REDIS_ADDR: redis:6379
+    # Raise these for load tests (Phase 6); the defaults suit normal chat.
+    RATE_LIMIT_CAPACITY: ${RATE_LIMIT_CAPACITY:-5}
+    RATE_LIMIT_REFILL_RATE: ${RATE_LIMIT_REFILL_RATE:-2}
+  depends_on:
+    redis:
+      condition: service_healthy
+  healthcheck:
+    test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+    interval: 5s
+    timeout: 2s
+    retries: 3
+
+services:
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 2s
+      retries: 5
+
+  gateway-1:
+    <<: *gateway
+    environment:
+      <<: *gateway-env
+      NODE_ID: node-1
+    ports:
+      - "8081:8080"
+
+  gateway-2:
+    <<: *gateway
+    environment:
+      <<: *gateway-env
+      NODE_ID: node-2
+    ports:
+      - "8082:8080"
+
+  gateway-3:
+    <<: *gateway
+    environment:
+      <<: *gateway-env
+      NODE_ID: node-3
+    ports:
+      - "8083:8080"
+
+  # Static React build only; reached through the edge nginx.
+  frontend:
+    build: ./frontend
+
+  # Public entry point on :80: routes / to frontend and /ws/ to the gateways.
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./configs/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - gateway-1
+      - gateway-2
+      - gateway-3
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./configs/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./configs/alerts.yml:/etc/prometheus/alerts.yml:ro
+    depends_on:
+      - gateway-1
+      - gateway-2
+      - gateway-3
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+
+  # Load generator (Phase 6). Runs on the compose network so traffic does not
+  # cross Docker Desktop's host port forwarding, which becomes the bottleneck.
+  # Start it with: docker compose run --rm --no-deps loadgen <flags>
+  loadgen:
+    profiles: ["load"]
+    build:
+      context: .
+      dockerfile: Dockerfile.loadgen
+    image: chatscale-loadgen
+    volumes:
+      - ./results:/results

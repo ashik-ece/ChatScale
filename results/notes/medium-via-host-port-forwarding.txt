@@ -1,0 +1,32 @@
+t=   5s conns=3000   sent=240      recv/s=141791    p99(1m)= 268.44ms drops(1m)=0 errframes=0
+t=  10s conns=3000   sent=490      recv/s=150318    p99(1m)= 268.44ms drops(1m)=0 errframes=0
+t=  15s conns=3000   sent=740      recv/s=150025    p99(1m)= 264.24ms drops(1m)=0 errframes=0
+t=  20s conns=3000   sent=990      recv/s=149995    p99(1m)= 264.24ms drops(1m)=0 errframes=0
+t=  25s conns=3000   sent=1240     recv/s=149756    p99(1m)= 268.44ms drops(1m)=0 errframes=0
+t=  30s conns=3000   sent=1490     recv/s=150438    p99(1m)= 268.44ms drops(1m)=0 errframes=0
+t=  35s conns=3000   sent=1740     recv/s=149583    p99(1m)= 268.44ms drops(1m)=0 errframes=0
+t=  40s conns=3000   sent=1990     recv/s=149781    p99(1m)= 276.82ms drops(1m)=0 errframes=0
+t=  45s conns=3000   sent=2240     recv/s=150511    p99(1m)= 276.82ms drops(1m)=0 errframes=0
+t=  50s conns=3000   sent=2490     recv/s=149972    p99(1m)= 276.82ms drops(1m)=0 errframes=0
+t=  55s conns=3000   sent=2740     recv/s=150436    p99(1m)= 268.44ms drops(1m)=0 errframes=0
+t=  60s conns=3000   sent=2990     recv/s=149465    p99(1m)= 276.82ms drops(1m)=0 errframes=0
+t=  65s conns=3000   sent=3240     recv/s=150133    p99(1m)= 276.82ms drops(1m)=0 errframes=0
+t=  70s conns=3000   sent=3490     recv/s=149860    p99(1m)= 276.82ms drops(1m)=0 errframes=0
+t=  75s conns=3000   sent=3740     recv/s=149959    p99(1m)= 276.82ms drops(1m)=0 errframes=0
+t=  80s conns=3000   sent=3990     recv/s=149948    p99(1m)= 276.82ms drops(1m)=0 errframes=0
+t=  85s conns=3000   sent=4240     recv/s=149974    p99(1m)= 276.82ms drops(1m)=0 errframes=0
+t=  90s conns=3000   sent=4490     recv/s=149799    p99(1m)= 276.82ms drops(1m)=0 errframes=0
+t=  95s conns=3000   sent=4740     recv/s=150323    p99(1m)= 276.82ms drops(1m)=0 errframes=0
+t= 100s conns=3000   sent=4990     recv/s=150114    p99(1m)= 276.82ms drops(1m)=0 errframes=0
+t= 105s conns=3000   sent=5240     recv/s=149830    p99(1m)= 268.44ms drops(1m)=0 errframes=0
+t= 110s conns=3000   sent=5490     recv/s=149837    p99(1m)= 276.82ms drops(1m)=0 errframes=0
+t= 115s conns=3000   sent=5740     recv/s=150004    p99(1m)= 276.82ms drops(1m)=0 errframes=0
+
+=== medium run 1: 120s ===
+connections    peak=3000 alive_at_end=3000 failed_dials=0
+messages       sent=5990 received=17960989 expected=17966598 estimatedDrops=5609 (0.031%)
+e2e latency    p50=47.19ms p95=111.15ms p99=276.82ms
+server         dropped=0 fanout_p99(1m)=1.756ms max_gc_pause=1.17ms
+               gateway-1:8080 peak RSS 57 MiB
+               gateway-2:8080 peak RSS 66 MiB
+               gateway-3:8080 peak RSS 61 MiB

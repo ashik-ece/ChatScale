@@ -1,0 +1,79 @@
+package ws
+
+import (
+	"log"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
+
+	"github.com/gorilla/websocket"
+)
+
+// NewUpgrader builds an upgrader that accepts requests with no Origin header
+// (CLI tools), localhost origins, and any origin host listed in allowedOrigins.
+// A "*" entry allows everything.
+func NewUpgrader(allowedOrigins []string) websocket.Upgrader {
+	return websocket.Upgrader{
+		HandshakeTimeout: 10 * time.Second,
+		ReadBufferSize:   1024,
+		WriteBufferSize:  1024,
+		CheckOrigin:      originChecker(allowedOrigins),
+	}
+}
+
+func originChecker(allowed []string) func(*http.Request) bool {
+	return func(r *http.Request) bool {
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			return true
+		}
+		u, err := url.Parse(origin)
+		if err != nil {
+			return false
+		}
+		host := u.Hostname()
+		if host == "localhost" || host == "127.0.0.1" || host == "::1" {
+			return true
+		}
+		for _, a := range allowed {
+			a = strings.TrimSpace(a)
+			if a == "*" || strings.EqualFold(a, host) || strings.EqualFold(a, u.Host) {
+				return true
+			}
+		}
+		return false
+	}
+}
+
+// ServeWS upgrades GET /ws/{roomID} and starts the connection's pumps.
+// The optional ?user= query parameter sets the user ID and ?mod=true marks the
+// connection as a moderator. There is no authentication yet, so both are
+// trusted as sent; this is for local development only.
+func ServeWS(h Hub, up websocket.Upgrader) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		roomID := r.PathValue("roomID")
+		if roomID == "" {
+			http.Error(w, "missing room", http.StatusBadRequest)
+			return
+		}
+		conn, err := up.Upgrade(w, r, nil)
+		if err != nil {
+			log.Printf("upgrade failed: %v", err)
+			return
+		}
+		c := NewClient(conn, r.URL.Query().Get("user"), roomID)
+		c.IsMod = r.URL.Query().Get("mod") == "true"
+		if err := h.Register(c); err != nil {
+			log.Printf("register failed conn=%s room=%s: %v", c.ConnID, roomID, err)
+			_ = conn.WriteControl(websocket.CloseMessage,
+				websocket.FormatCloseMessage(websocket.CloseTryAgainLater, "try again later"),
+				time.Now().Add(time.Second))
+			conn.Close()
+			c.Close()
+			return
+		}
+		go WritePump(c)
+		go ReadPump(c, h)
+	}
+}

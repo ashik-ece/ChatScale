@@ -1,0 +1,22 @@
+ Container chatscale-loadgen-run-b106ef1c97fd Creating 
+ Container chatscale-loadgen-run-b106ef1c97fd Created 
+t=   5s conns=1000   sent=44       recv/s=8795      p99(1m)=   8.91ms drops(1m)=0 errframes=0
+t=  10s conns=1000   sent=94       recv/s=10002     p99(1m)=   9.96ms drops(1m)=0 errframes=0
+t=  15s conns=1000   sent=144      recv/s=10001     p99(1m)=   9.18ms drops(1m)=0 errframes=0
+t=  20s conns=1000   sent=194      recv/s=10001     p99(1m)=   9.18ms drops(1m)=0 errframes=0
+t=  25s conns=1000   sent=244      recv/s=10000     p99(1m)=   9.18ms drops(1m)=0 errframes=0
+t=  30s conns=1000   sent=294      recv/s=10000     p99(1m)=   9.44ms drops(1m)=0 errframes=0
+t=  35s conns=1000   sent=344      recv/s=10000     p99(1m)=   9.70ms drops(1m)=0 errframes=0
+t=  40s conns=1000   sent=394      recv/s=10000     p99(1m)=  11.01ms drops(1m)=0 errframes=0
+t=  45s conns=1000   sent=444      recv/s=9998      p99(1m)=  11.27ms drops(1m)=0 errframes=0
+t=  50s conns=1000   sent=494      recv/s=10003     p99(1m)=  11.01ms drops(1m)=0 errframes=0
+t=  55s conns=1000   sent=544      recv/s=9998      p99(1m)=  10.75ms drops(1m)=0 errframes=0
+
+=== baseline run 1: 60s ===
+connections    peak=1000 alive_at_end=1000 failed_dials=0
+messages       sent=594 received=594000 expected=594000 estimatedDrops=0 (0.000%)
+e2e latency    p50=5.51ms p95=8.00ms p99=10.49ms
+server         dropped=0 fanout_p99(1m)=1.466ms max_gc_pause=1.25ms
+               gateway-1:8080 peak RSS 31 MiB
+               gateway-2:8080 peak RSS 35 MiB
+               gateway-3:8080 peak RSS 33 MiB
