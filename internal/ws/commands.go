@@ -22,14 +22,14 @@ func handleCommand(c *Client, h Hub, content string) {
 	case len(fields) == 3 && fields[0] == "!timeout":
 		secs, err := strconv.Atoi(fields[2])
 		if err != nil || secs <= 0 {
-			c.SendJSON(message.NewError(message.ReasonBadCommand))
+			c.SendJSON(message.NewError(message.ReasonBadCommand, ""))
 			return
 		}
 		h.TimeoutUser(fields[1], time.Duration(secs)*time.Second)
 		reply(c, fmt.Sprintf("timed out %s for %ds", fields[1], secs))
 
 	default:
-		c.SendJSON(message.NewError(message.ReasonBadCommand))
+		c.SendJSON(message.NewError(message.ReasonBadCommand, ""))
 	}
 }
 

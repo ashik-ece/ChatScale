@@ -15,6 +15,10 @@ type Message struct {
 	Content   string `json:"content"`
 	Timestamp int64  `json:"timestamp"`
 	NodeID    string `json:"nodeId,omitempty"` // gateway node that published it
+
+	// ClientMsgID is chosen by the sender and echoed back unchanged, so the
+	// sender can match the server's copy to its optimistic local one.
+	ClientMsgID string `json:"clientMsgId,omitempty"`
 }
 
 const (
@@ -25,10 +29,11 @@ const (
 
 // ErrorEnvelope is sent back to a single client when its message is rejected.
 type ErrorEnvelope struct {
-	Type   string `json:"type"`
-	Reason string `json:"reason"`
+	Type        string `json:"type"`
+	Reason      string `json:"reason"`
+	ClientMsgID string `json:"clientMsgId,omitempty"` // the rejected message, if known
 }
 
-func NewError(reason string) ErrorEnvelope {
-	return ErrorEnvelope{Type: TypeError, Reason: reason}
+func NewError(reason, clientMsgID string) ErrorEnvelope {
+	return ErrorEnvelope{Type: TypeError, Reason: reason, ClientMsgID: clientMsgID}
 }
