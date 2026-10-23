@@ -18,7 +18,7 @@ const (
 
 // Hub is what the pumps need from the room manager.
 type Hub interface {
-	Register(c *Client)
+	Register(c *Client) error
 	Unregister(c *Client)
 	Broadcast(msg message.Message)
 

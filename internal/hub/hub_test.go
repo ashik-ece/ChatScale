@@ -13,15 +13,23 @@ import (
 	"github.com/ashik-ece/chatscale/internal/filter"
 	"github.com/ashik-ece/chatscale/internal/hub"
 	"github.com/ashik-ece/chatscale/internal/message"
+	"github.com/ashik-ece/chatscale/internal/pubsub"
 	"github.com/ashik-ece/chatscale/internal/ratelimit"
 	"github.com/ashik-ece/chatscale/internal/ws"
 )
 
 func newServer(t *testing.T) (*httptest.Server, *hub.Hub) {
 	t.Helper()
+	return newNode(t, pubsub.NewMemoryBus(), "test-node")
+}
+
+// newNode starts one gateway node attached to bus; nodes sharing a bus behave
+// like gateways sharing a Redis.
+func newNode(t *testing.T, bus *pubsub.MemoryBus, nodeID string) (*httptest.Server, *hub.Hub) {
+	t.Helper()
 	trie := filter.NewTrie()
 	trie.Insert("badword")
-	h := hub.New(ratelimit.NewStore(ratelimit.Config{Capacity: 5, RefillRate: 2}), trie)
+	h := hub.New(ratelimit.NewStore(ratelimit.Config{Capacity: 5, RefillRate: 2}), trie, bus, bus.NewSubscriber(), nodeID)
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /ws/{roomID}", ws.ServeWS(h, ws.NewUpgrader(nil)))
 	srv := httptest.NewServer(mux)
@@ -249,5 +257,93 @@ func TestNonModCommandIsPlainChat(t *testing.T) {
 	say(t, b, "still here")
 	if m, err := read(a, time.Second); err != nil || m.Content != "still here" {
 		t.Errorf("bob should not be banned, got %+v err=%v", m, err)
+	}
+}
+
+func TestCrossNodeDelivery(t *testing.T) {
+	bus := pubsub.NewMemoryBus()
+	srv1, _ := newNode(t, bus, "node-1")
+	srv2, _ := newNode(t, bus, "node-2")
+	srv3, _ := newNode(t, bus, "node-3")
+
+	sender := dial(t, srv1, "room1", "alice")
+	onNode2 := dial(t, srv2, "room1", "bob")
+	onNode3 := dial(t, srv3, "room1", "carol")
+	otherRoom := dial(t, srv2, "room2", "dave")
+	time.Sleep(50 * time.Millisecond)
+
+	say(t, sender, "across nodes")
+
+	for name, c := range map[string]*websocket.Conn{"node-1": sender, "node-2": onNode2, "node-3": onNode3} {
+		m, err := read(c, time.Second)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if m.Content != "across nodes" || m.NodeID != "node-1" {
+			t.Errorf("%s got %+v, want content from node-1", name, m)
+		}
+	}
+	if m, err := read(otherRoom, 200*time.Millisecond); err == nil {
+		t.Errorf("room2 client received %+v", m)
+	}
+}
+
+func TestSubscriptionLifecycle(t *testing.T) {
+	bus := pubsub.NewMemoryBus()
+	srv, _ := newNode(t, bus, "node-1")
+
+	if got := bus.Channels(); len(got) != 0 {
+		t.Fatalf("expected no channels at start, got %v", got)
+	}
+
+	a := dial(t, srv, "room1", "alice")
+	b := dial(t, srv, "room1", "bob")
+	waitChannels(t, bus, []string{"room:room1"})
+
+	a.Close()
+	time.Sleep(100 * time.Millisecond)
+	if got := bus.Channels(); len(got) != 1 {
+		t.Fatalf("room must stay subscribed while a client remains, got %v", got)
+	}
+
+	b.Close()
+	waitChannels(t, bus, nil)
+}
+
+func waitChannels(t *testing.T, bus *pubsub.MemoryBus, want []string) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		got := bus.Channels()
+		if len(got) == len(want) && (len(want) == 0 || got[0] == want[0]) {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("channels = %v, want %v", got, want)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+}
+
+func TestSurvivingNodesKeepWorkingWhenOneStops(t *testing.T) {
+	bus := pubsub.NewMemoryBus()
+	srv1, _ := newNode(t, bus, "node-1")
+	srv2, h2 := newNode(t, bus, "node-2")
+	srv3, _ := newNode(t, bus, "node-3")
+
+	a := dial(t, srv1, "room1", "alice")
+	dial(t, srv2, "room1", "bob")
+	c := dial(t, srv3, "room1", "carol")
+	time.Sleep(50 * time.Millisecond)
+
+	h2.Shutdown()
+	srv2.CloseClientConnections()
+	time.Sleep(100 * time.Millisecond)
+
+	say(t, a, "still up")
+	for name, conn := range map[string]*websocket.Conn{"node-1": a, "node-3": c} {
+		if m, err := read(conn, time.Second); err != nil || m.Content != "still up" {
+			t.Errorf("%s got %+v err=%v", name, m, err)
+		}
 	}
 }

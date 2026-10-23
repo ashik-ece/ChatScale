@@ -64,7 +64,15 @@ func ServeWS(h Hub, up websocket.Upgrader) http.HandlerFunc {
 		}
 		c := NewClient(conn, r.URL.Query().Get("user"), roomID)
 		c.IsMod = r.URL.Query().Get("mod") == "true"
-		h.Register(c)
+		if err := h.Register(c); err != nil {
+			log.Printf("register failed conn=%s room=%s: %v", c.ConnID, roomID, err)
+			_ = conn.WriteControl(websocket.CloseMessage,
+				websocket.FormatCloseMessage(websocket.CloseTryAgainLater, "try again later"),
+				time.Now().Add(time.Second))
+			conn.Close()
+			c.Close()
+			return
+		}
 		go WritePump(c)
 		go ReadPump(c, h)
 	}

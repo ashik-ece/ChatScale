@@ -1,6 +1,7 @@
 package hub
 
 import (
+	"context"
 	"sync"
 	"sync/atomic"
 
@@ -12,6 +13,7 @@ type Room struct {
 	mu      sync.RWMutex
 	clients map[*ws.Client]struct{}
 	dropped atomic.Uint64
+	cancel  context.CancelFunc // stops the room's fan-out goroutine
 }
 
 func newRoom() *Room {
