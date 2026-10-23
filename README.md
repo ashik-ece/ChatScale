@@ -7,6 +7,7 @@ A horizontally scaled live chat service in Go, built to deliver one room's messa
 ![Redis](https://img.shields.io/badge/Redis-Pub%2FSub-DC382D?logo=redis&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 ![Prometheus](https://img.shields.io/badge/Prometheus-Grafana-E6522C?logo=prometheus&logoColor=white)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 <p align="center">
   <img src="docs/images/chat-ui.png" alt="The ChatScale web client: a connected banner, a room with messages from several users, and one banned word masked" width="560">
@@ -29,6 +30,7 @@ A horizontally scaled live chat service in Go, built to deliver one room's messa
 - [Design decisions](#design-decisions)
 - [Known limitations](#known-limitations)
 - [Repository layout](#repository-layout)
+- [License](#license)
 
 ## Features
 
@@ -392,3 +394,7 @@ scripts/          scenario runner, batch runner, dashboard screenshot
 results/          load-test data, logs, screenshots and the written analysis
 docs/images/      README images
 ```
+
+## License
+
+Released under the [MIT License](LICENSE). Copyright (c) 2026 Ashik M John.
