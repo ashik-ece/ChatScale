@@ -46,12 +46,19 @@ services:
     ports:
       - "8083:8080"
 
-  # Serves the React build and load-balances /ws/ across the gateways.
+  # Static React build only; reached through the edge nginx.
   frontend:
     build: ./frontend
+
+  # Public entry point on :80: routes / to frontend and /ws/ to the gateways.
+  nginx:
+    image: nginx:alpine
     ports:
       - "80:80"
+    volumes:
+      - ./configs/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
+      - frontend
       - gateway-1
       - gateway-2
       - gateway-3
