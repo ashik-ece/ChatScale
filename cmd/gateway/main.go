@@ -5,14 +5,18 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"net/http/pprof"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 	"time"
 
+	"github.com/redis/go-redis/v9"
+
 	"github.com/ashik-ece/chatscale/internal/filter"
 	"github.com/ashik-ece/chatscale/internal/hub"
+	"github.com/ashik-ece/chatscale/internal/pubsub"
 	"github.com/ashik-ece/chatscale/internal/ratelimit"
 	"github.com/ashik-ece/chatscale/internal/ws"
 )
@@ -27,11 +31,23 @@ func main() {
 	}
 	limiter := ratelimit.NewStore(ratelimit.ConfigFromEnv())
 
-	h := hub.New(limiter, trie)
+	nodeID := getenv("NODE_ID", "node-1")
+	rdb := redis.NewClient(&redis.Options{Addr: getenv("REDIS_ADDR", "localhost:6379")})
+	pingCtx, cancelPing := context.WithTimeout(context.Background(), 5*time.Second)
+	if err := rdb.Ping(pingCtx).Err(); err != nil {
+		log.Fatalf("redis: %v", err)
+	}
+	cancelPing()
+
+	h := hub.New(limiter, trie, pubsub.NewPublisher(rdb), pubsub.NewSubscriber(rdb), nodeID)
 	upgrader := ws.NewUpgrader(origins)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /ws/{roomID}", ws.ServeWS(h, upgrader))
+	// pprof, for goroutine-leak checks (registered explicitly: we don't use DefaultServeMux).
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"status":"ok"}`))
@@ -43,7 +59,7 @@ func main() {
 	defer stop()
 
 	go func() {
-		log.Printf("gateway listening on %s", addr)
+		log.Printf("gateway %s listening on %s", nodeID, addr)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("listen: %v", err)
 		}
@@ -53,7 +69,8 @@ func main() {
 	log.Println("shutting down")
 
 	// Hijacked WebSocket connections are not tracked by srv.Shutdown, so close
-	// them through the hub first and give the 1001 frames a moment to flush.
+	// them through the hub first (this also drains in-flight Redis publishes)
+	// and give the 1001 frames a moment to flush.
 	h.Shutdown()
 	time.Sleep(500 * time.Millisecond)
 
@@ -61,6 +78,9 @@ func main() {
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		log.Printf("server shutdown: %v", err)
+	}
+	if err := rdb.Close(); err != nil {
+		log.Printf("redis close: %v", err)
 	}
 }
 

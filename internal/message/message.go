@@ -14,6 +14,7 @@ type Message struct {
 	RoomID    string `json:"roomId"`
 	Content   string `json:"content"`
 	Timestamp int64  `json:"timestamp"`
+	NodeID    string `json:"nodeId,omitempty"` // gateway node that published it
 }
 
 const (
