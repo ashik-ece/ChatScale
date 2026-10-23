@@ -1,0 +1,83 @@
+ Container chatscale-loadgen-run-40282c711dc9 Creating 
+ Container chatscale-loadgen-run-40282c711dc9 Created 
+t=   5s conns=1000   sent=979      recv/s=195719    p99(1m)=   4.33ms drops(1m)=0 errframes=0
+t=  10s conns=1000   sent=1979     recv/s=200018    p99(1m)=   5.90ms drops(1m)=0 errframes=0
+t=  15s conns=1000   sent=2979     recv/s=200026    p99(1m)=   6.42ms drops(1m)=0 errframes=0
+t=  20s conns=1000   sent=3979     recv/s=199919    p99(1m)=   6.95ms drops(1m)=0 errframes=0
+t=  25s conns=1000   sent=4979     recv/s=200063    p99(1m)=   6.95ms drops(1m)=0 errframes=0
+t=  30s conns=1000   sent=5979     recv/s=200011    p99(1m)=   6.82ms drops(1m)=0 errframes=0
+t=  35s conns=2000   sent=6979     recv/s=399653    p99(1m)=   6.68ms drops(1m)=0 errframes=0
+t=  40s conns=2000   sent=7979     recv/s=399798    p99(1m)=   6.42ms drops(1m)=0 errframes=0
+t=  45s conns=2000   sent=8979     recv/s=400157    p99(1m)=   6.29ms drops(1m)=0 errframes=0
+t=  50s conns=2000   sent=9979     recv/s=399875    p99(1m)=   6.29ms drops(1m)=0 errframes=0
+t=  55s conns=2000   sent=10979    recv/s=400129    p99(1m)=   6.16ms drops(1m)=0 errframes=0
+t=  60s conns=2000   sent=11979    recv/s=399981    p99(1m)=   6.03ms drops(1m)=0 errframes=0
+t=  65s conns=3000   sent=12979    recv/s=599631    p99(1m)=   7.34ms drops(1m)=0 errframes=0
+t=  70s conns=3000   sent=13979    recv/s=599971    p99(1m)=   8.00ms drops(1m)=0 errframes=0
+t=  75s conns=3000   sent=14979    recv/s=600040    p99(1m)=   8.26ms drops(1m)=0 errframes=0
+t=  80s conns=3000   sent=15979    recv/s=599982    p99(1m)=   9.18ms drops(1m)=0 errframes=0
+t=  85s conns=3000   sent=16979    recv/s=599997    p99(1m)=   9.44ms drops(1m)=0 errframes=0
+t=  90s conns=3000   sent=17979    recv/s=599990    p99(1m)=   9.44ms drops(1m)=0 errframes=0
+t=  95s conns=4000   sent=18979    recv/s=799833    p99(1m)=  11.27ms drops(1m)=0 errframes=0
+t= 100s conns=4000   sent=19979    recv/s=799340    p99(1m)=  11.80ms drops(1m)=0 errframes=0
+t= 105s conns=4000   sent=20979    recv/s=800425    p99(1m)=  12.58ms drops(1m)=0 errframes=0
+t= 110s conns=4000   sent=21979    recv/s=800101    p99(1m)=  12.85ms drops(1m)=0 errframes=0
+t= 115s conns=4000   sent=22979    recv/s=799816    p99(1m)=  13.37ms drops(1m)=0 errframes=0
+t= 120s conns=4000   sent=23979    recv/s=800148    p99(1m)=  13.63ms drops(1m)=0 errframes=0
+t= 125s conns=5000   sent=24980    recv/s=997350    p99(1m)=  14.94ms drops(1m)=0 errframes=0
+t= 130s conns=5000   sent=25979    recv/s=999800    p99(1m)=  16.52ms drops(1m)=0 errframes=0
+t= 135s conns=5000   sent=26979    recv/s=1000716   p99(1m)=  18.87ms drops(1m)=0 errframes=0
+t= 140s conns=5000   sent=27979    recv/s=999996    p99(1m)=  18.87ms drops(1m)=0 errframes=0
+t= 145s conns=5000   sent=28979    recv/s=1000873   p99(1m)=  18.87ms drops(1m)=0 errframes=0
+t= 150s conns=5000   sent=29979    recv/s=998899    p99(1m)=  19.40ms drops(1m)=0 errframes=0
+t= 155s conns=6000   sent=30979    recv/s=1195534   p99(1m)=  21.50ms drops(1m)=0 errframes=0
+t= 160s conns=6000   sent=31979    recv/s=1200163   p99(1m)=  23.07ms drops(1m)=0 errframes=0
+t= 165s conns=6000   sent=32979    recv/s=1200451   p99(1m)=  23.59ms drops(1m)=0 errframes=0
+t= 170s conns=6000   sent=33978    recv/s=1203372   p99(1m)=  24.64ms drops(1m)=0 errframes=0
+t= 175s conns=6000   sent=34979    recv/s=1197795   p99(1m)=  24.64ms drops(1m)=0 errframes=0
+t= 180s conns=6000   sent=35980    recv/s=1202946   p99(1m)=  27.26ms drops(1m)=0 errframes=0
+t= 185s conns=7000   sent=36979    recv/s=1393608   p99(1m)=  29.88ms drops(1m)=0 errframes=0
+t= 190s conns=7000   sent=37979    recv/s=1399478   p99(1m)=  31.98ms drops(1m)=0 errframes=0
+t= 195s conns=7000   sent=38979    recv/s=1399581   p99(1m)=  31.46ms drops(1m)=0 errframes=0
+t= 200s conns=7000   sent=39979    recv/s=1399877   p99(1m)=  32.51ms drops(1m)=0 errframes=0
+t= 205s conns=7000   sent=40979    recv/s=1402165   p99(1m)=  33.03ms drops(1m)=0 errframes=0
+t= 210s conns=7000   sent=41980    recv/s=1398249   p99(1m)=  33.55ms drops(1m)=0 errframes=0
+t= 215s conns=8000   sent=42979    recv/s=1599939   p99(1m)=  37.75ms drops(1m)=0 errframes=0
+t= 220s conns=8000   sent=43979    recv/s=1597205   p99(1m)=  39.85ms drops(1m)=0 errframes=0
+t= 225s conns=8000   sent=44980    recv/s=1599643   p99(1m)=  40.89ms drops(1m)=0 errframes=0
+t= 230s conns=8000   sent=45979    recv/s=1598224   p99(1m)=  40.89ms drops(1m)=0 errframes=0
+t= 235s conns=8000   sent=46979    recv/s=1601953   p99(1m)=  41.94ms drops(1m)=0 errframes=0
+t= 240s conns=8000   sent=47979    recv/s=1598961   p99(1m)=  42.99ms drops(1m)=0 errframes=0
+t= 245s conns=9000   sent=48979    recv/s=1794988   p99(1m)=  48.23ms drops(1m)=0 errframes=0
+t= 250s conns=9000   sent=49979    recv/s=1800362   p99(1m)=  51.38ms drops(1m)=0 errframes=0
+t= 255s conns=9000   sent=50980    recv/s=1798226   p99(1m)=  52.43ms drops(1m)=0 errframes=0
+t= 260s conns=9000   sent=51981    recv/s=1799533   p99(1m)=  54.53ms drops(1m)=0 errframes=0
+t= 265s conns=9000   sent=52979    recv/s=1802876   p99(1m)=  55.57ms drops(1m)=0 errframes=0
+t= 270s conns=9000   sent=53980    recv/s=1797523   p99(1m)=  57.67ms drops(1m)=0 errframes=0
+t= 275s conns=10000  sent=54978    recv/s=1980962   p99(1m)= 192.94ms drops(1m)=0 errframes=0
+t= 280s conns=10000  sent=55979    recv/s=2001592   p99(1m)= 188.74ms drops(1m)=0 errframes=0
+t= 285s conns=10000  sent=56979    recv/s=1999514   p99(1m)= 184.55ms drops(1m)=0 errframes=0
+t= 290s conns=10000  sent=57979    recv/s=1994296   p99(1m)= 218.10ms drops(1m)=0 errframes=0
+level of 10000 connections exceeded a threshold (p99): stopping
+
+=== ceiling run 2: 290s ===
+connections    peak=10000 alive_at_end=4853 failed_dials=0
+messages       sent=57989 received=309842211 expected=310004759 estimatedDrops=162548 (0.052%)
+e2e latency    p50=12.58ms p95=51.38ms p99=106.95ms
+last stable    9000 connections, trailing-minute p99=58.72ms (t=265s)
+stopped        level p99 exceeded 100ms
+  level 1000   p99=     6.9ms recv/s=200063    drops(1m)=0
+  level 2000   p99=     5.9ms recv/s=400129    drops(1m)=0
+  level 3000   p99=    11.0ms recv/s=599997    drops(1m)=0
+  level 4000   p99=    13.9ms recv/s=799816    drops(1m)=0
+  level 5000   p99=    23.1ms recv/s=1000873   drops(1m)=0
+  level 6000   p99=    25.7ms recv/s=1197795   drops(1m)=0
+  level 7000   p99=    34.6ms recv/s=1402165   drops(1m)=0
+  level 8000   p99=    44.0ms recv/s=1601953   drops(1m)=0
+  level 9000   p99=    58.7ms recv/s=1802876   drops(1m)=0
+  level 10000  p99=   310.4ms recv/s=1994296   drops(1m)=0
+server         dropped=0 fanout_p99(1m)=23.069ms max_gc_pause=15.23ms
+               gateway-1:8080 peak RSS 130 MiB
+               gateway-2:8080 peak RSS 122 MiB
+               gateway-3:8080 peak RSS 120 MiB
+WARNING: 45 non-chat frames received (rate-limit errors?); raise RATE_LIMIT_* on the gateways

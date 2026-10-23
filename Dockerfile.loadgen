@@ -1,0 +1,12 @@
+# The load generator as a container, so it can reach the gateways over the
+# compose network instead of through Docker Desktop's host port forwarding.
+FROM golang:1.26-alpine AS builder
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build -o /out/loadgen ./cmd/loadgen
+
+FROM alpine:3.20
+COPY --from=builder /out/loadgen /usr/local/bin/loadgen
+ENTRYPOINT ["loadgen"]

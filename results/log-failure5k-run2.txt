@@ -1,0 +1,35 @@
+ Container chatscale-loadgen-run-db160920f3f0 Creating 
+ Container chatscale-loadgen-run-db160920f3f0 Created 
+t=   5s conns=5000   sent=983      recv/s=971542    p99(1m)=  17.30ms drops(1m)=0 errframes=0
+t=  10s conns=5000   sent=1982     recv/s=999777    p99(1m)=  17.30ms drops(1m)=0 errframes=0
+t=  15s conns=5000   sent=2985     recv/s=1000161   p99(1m)=  16.52ms drops(1m)=0 errframes=0
+t=  20s conns=5000   sent=3984     recv/s=1000107   p99(1m)=  16.25ms drops(1m)=0 errframes=0
+t=  25s conns=5000   sent=4985     recv/s=1000143   p99(1m)=  16.25ms drops(1m)=0 errframes=0
+t=  30s conns=5000   sent=5985     recv/s=999102    p99(1m)=  16.52ms drops(1m)=0 errframes=0
+t=  35s conns=5000   sent=6985     recv/s=1000732   p99(1m)=  16.52ms drops(1m)=0 errframes=0
+t=  40s conns=5000   sent=7985     recv/s=999284    p99(1m)=  16.52ms drops(1m)=0 errframes=0
+t=  45s conns=5000   sent=8981     recv/s=1000261   p99(1m)=  16.52ms drops(1m)=0 errframes=0
+t=  50s conns=5000   sent=9985     recv/s=1000339   p99(1m)=  16.52ms drops(1m)=0 errframes=0
+t=  55s conns=5000   sent=10985    recv/s=1000438   p99(1m)=  16.78ms drops(1m)=0 errframes=0
+t=  60s conns=3333   sent=11970    recv/s=977065    p99(1m)=  16.52ms drops(1m)=0 errframes=0
+t=  65s conns=5000   sent=12917    recv/s=907992    p99(1m)=  17.30ms drops(1m)=0 errframes=0
+t=  70s conns=5000   sent=13914    recv/s=999107    p99(1m)=  17.30ms drops(1m)=0 errframes=0
+t=  75s conns=5000   sent=14919    recv/s=1000621   p99(1m)=  17.30ms drops(1m)=0 errframes=0
+t=  80s conns=5000   sent=15919    recv/s=999522    p99(1m)=  17.30ms drops(1m)=0 errframes=0
+t=  85s conns=5000   sent=16915    recv/s=999798    p99(1m)=  17.30ms drops(1m)=0 errframes=0
+t=  90s conns=5000   sent=17919    recv/s=1000260   p99(1m)=  17.30ms drops(1m)=0 errframes=0
+t=  95s conns=5000   sent=18919    recv/s=1000299   p99(1m)=  17.30ms drops(1m)=0 errframes=0
+t= 100s conns=5000   sent=19919    recv/s=1000054   p99(1m)=  17.30ms drops(1m)=0 errframes=0
+t= 105s conns=5000   sent=20919    recv/s=1000408   p99(1m)=  17.30ms drops(1m)=0 errframes=0
+t= 110s conns=5000   sent=21919    recv/s=1000132   p99(1m)=  17.30ms drops(1m)=0 errframes=0
+t= 115s conns=5000   sent=22919    recv/s=1000032   p99(1m)=  16.78ms drops(1m)=0 errframes=0
+
+=== failure5k run 2: 120s ===
+connections    peak=5000 alive_at_end=5000 failed_dials=0
+messages       sent=23912 received=119297037 expected=119302608 estimatedDrops=5571 (0.005%)
+e2e latency    p50=5.64ms p95=12.32ms p99=17.30ms
+reconnect      n=1667 p50=1003ms p95=1457ms max=1518ms
+server         dropped=0 fanout_p99(1m)=6.656ms max_gc_pause=6.53ms
+               gateway-1:8080 peak RSS 88 MiB
+               gateway-2:8080 peak RSS 76 MiB
+               gateway-3:8080 peak RSS 126 MiB

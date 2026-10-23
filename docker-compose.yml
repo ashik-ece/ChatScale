@@ -89,3 +89,15 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
+
+  # Load generator (Phase 6). Runs on the compose network so traffic does not
+  # cross Docker Desktop's host port forwarding, which becomes the bottleneck.
+  # Start it with: docker compose run --rm --no-deps loadgen <flags>
+  loadgen:
+    profiles: ["load"]
+    build:
+      context: .
+      dockerfile: Dockerfile.loadgen
+    image: chatscale-loadgen
+    volumes:
+      - ./results:/results
