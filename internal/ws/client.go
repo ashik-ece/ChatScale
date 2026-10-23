@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 
 	"github.com/gorilla/websocket"
 )
@@ -27,6 +28,7 @@ type Client struct {
 	UserID string
 	RoomID string
 	ConnID string
+	IsMod  bool
 }
 
 func NewClient(conn *websocket.Conn, userID, roomID string) *Client {
@@ -60,6 +62,16 @@ func (c *Client) TrySend(data []byte) bool {
 	default:
 		return false
 	}
+}
+
+// SendJSON queues v for this client only. Replies go through the send channel,
+// never straight to the connection, so the WritePump stays the sole writer.
+func (c *Client) SendJSON(v any) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return
+	}
+	c.TrySend(data)
 }
 
 // Close asks both pumps to stop; the WritePump sends a 1001 close frame.

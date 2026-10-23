@@ -7,6 +7,8 @@ RUN CGO_ENABLED=0 go build -o /out/gateway ./cmd/gateway
 
 # alpine rather than scratch so we can `sh` into the container when debugging
 FROM alpine:3.20
+WORKDIR /app
 COPY --from=builder /out/gateway /usr/local/bin/gateway
+COPY configs ./configs
 EXPOSE 8080
 ENTRYPOINT ["gateway"]

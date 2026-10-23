@@ -3,6 +3,7 @@ package ws
 import (
 	"encoding/json"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -20,6 +21,13 @@ type Hub interface {
 	Register(c *Client)
 	Unregister(c *Client)
 	Broadcast(msg message.Message)
+
+	IsBanned(userID string) bool
+	IsTimedOut(userID string) bool
+	Allow(userID string) bool
+	Filter(content string) (string, bool)
+	BanUser(userID string)
+	TimeoutUser(userID string, d time.Duration)
 }
 
 // ReadPump reads messages from the connection and hands them to the hub until
@@ -49,6 +57,32 @@ func ReadPump(c *Client, h Hub) {
 		var msg message.Message
 		if err := json.Unmarshal(raw, &msg); err != nil {
 			continue // ignore malformed frames
+		}
+
+		// Banned users are silently ignored.
+		if h.IsBanned(c.UserID) {
+			continue
+		}
+
+		// Moderator commands are handled here and never broadcast. Everyone
+		// else's "!..." messages are ordinary chat.
+		if c.IsMod && strings.HasPrefix(msg.Content, "!") {
+			handleCommand(c, h, msg.Content)
+			continue
+		}
+
+		if h.IsTimedOut(c.UserID) {
+			c.SendJSON(message.NewError(message.ReasonTimedOut))
+			continue
+		}
+		if !h.Allow(c.UserID) {
+			c.SendJSON(message.NewError(message.ReasonRateLimited))
+			continue
+		}
+
+		if filtered, matched := h.Filter(msg.Content); matched {
+			log.Printf("filtered message user=%s room=%s", c.UserID, c.RoomID)
+			msg.Content = filtered
 		}
 
 		// Identity and routing come from the connection, never from the payload.
